@@ -1,0 +1,18 @@
+{
+  "name": "Chrono Steps — Procedure Guide Studio",
+  "short_name": "Chrono Steps",
+  "description": "100% client-side screen recording, redaction, and illustrated procedure guide studio by Unfoundry.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#158cba",
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

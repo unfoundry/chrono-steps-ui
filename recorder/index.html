@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Chrono Steps Recorder — Client-side screen recorder, timed video redaction, and WebM exporter by Unfoundry." />
+  <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml" />
+  <title>Chrono Steps — Screen Recorder & Redactor</title>
+
+  <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css" />
+  <link rel="stylesheet" href="../assets/vendor/bootstrap-icons/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="../assets/vendor/sweetalert2/sweetalert2.min.css" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <style>
+    .recorder-workspace {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(280px, 26vw, 360px);
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 0.75rem;
+    }
+    #videoPanel { grid-column: 1; grid-row: 1; min-height: 0; }
+    #redactionsSidebar { grid-column: 2; grid-row: 1 / span 2; min-height: 0; }
+    #commands { grid-column: 1; grid-row: 2; }
+    @media (max-width: 960px) {
+      .recorder-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+      #commands { grid-column: 1; grid-row: 2; }
+      #redactionsSidebar { grid-column: 1; grid-row: 3; max-height: 360px; }
+    }
+  </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+  <header class="ribbon-header">
+    <div class="ribbon-bar">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="../index.html" class="ribbon-brand" title="Open full Chrono Steps Studio">
+          <span class="ribbon-brand-icon"><i class="bi bi-record-circle"></i></span>
+          <span>Chrono Steps</span>
+          <span class="badge rounded-pill text-bg-light border text-danger fw-semibold" style="font-size:0.7rem;">Recorder</span>
+        </a>
+        <div class="vr mx-1 text-secondary opacity-25 d-none d-md-block"></div>
+        <input id="videoTitle" class="form-control form-control-sm top-field" value="screen-recording" aria-label="Recording title" />
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <div class="quick-toolbar d-none d-md-flex">
+          <button id="quickRecord" class="quick-btn text-danger" type="button">
+            <i class="bi bi-record-circle"></i> Record
+          </button>
+          <button id="quickLoadVideo" class="quick-btn text-primary" type="button">
+            <i class="bi bi-folder2-open"></i> Load Video
+          </button>
+          <button id="quickAddMask" class="quick-btn" type="button">
+            <i class="bi bi-eye-slash"></i> Redact
+          </button>
+          <div class="vr my-1 text-secondary opacity-25"></div>
+          <button id="quickExportRendered" class="quick-btn text-success" type="button">
+            <i class="bi bi-shield-check"></i> Export WebM
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-3 pb-1 border-top border-light-subtle d-flex align-items-center gap-1 nav-ribbon">
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">File</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="menuRecord" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-record-circle text-danger"></i>Record screen</span>
+            </button>
+          </li>
+          <li>
+            <button id="menuLoadVideo" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-camera-video text-primary"></i>Load video file</span>
+            </button>
+          </li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li>
+            <button id="menuClear" class="dropdown-item-glass w-100 border-0 bg-transparent text-danger" type="button">
+              <span><i class="bi bi-trash"></i>Clear workspace</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Redactions</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="menuAddMask" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-eye-slash text-danger"></i>Add timed redaction</span>
+            </button>
+          </li>
+          <li>
+            <button id="menuExcludeAudio" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-volume-mute text-secondary"></i>Exclude audio on export</span>
+              <i class="bi toggle-check text-primary"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Export</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="exportOriginal" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-camera-reels text-secondary"></i>Original video</span>
+            </button>
+          </li>
+          <li>
+            <button id="exportRendered" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-shield-check text-success"></i>Rendered redacted video (WebM)</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <span id="drawModeBanner" class="badge text-bg-warning ms-auto d-none align-items-center gap-2 py-1 px-2">
+        <i class="bi bi-bounding-box-circles"></i>
+        <span>Drag on the video to select the redaction area</span>
+      </span>
+    </div>
+
+    <input id="videoInput" type="file" accept="video/*" hidden />
+  </header>
+
+  <main class="recorder-workspace container-fluid p-2 p-md-3">
+    <section id="videoPanel" class="glass-panel d-flex flex-column overflow-hidden" tabindex="0">
+      <div class="panel-header d-flex justify-content-between align-items-center px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-film text-primary"></i>
+          <strong class="small text-uppercase tracking-wide">Video & Redaction Stage</strong>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button id="loadVideo" class="btn btn-outline-primary" type="button">
+            <i class="bi bi-folder2-open"></i> Load video
+          </button>
+          <button id="recordScreen" class="btn btn-outline-danger" type="button">
+            <i class="bi bi-record-circle"></i>
+            <span id="recordText">Record screen</span>
+            <span id="recordClock" class="ms-1 fw-bold" hidden>00:00</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="stage" class="stage empty flex-grow-1">
+        <video id="video" playsinline></video>
+        <canvas id="overlay"></canvas>
+
+        <div id="empty" class="empty-state text-center p-4">
+          <div class="empty-icon-circle mb-3 mx-auto">
+            <i class="bi bi-record-circle fs-1 text-danger"></i>
+          </div>
+          <h5 class="fw-bold mb-1">Record or Load Video</h5>
+          <p class="text-muted small mb-3">Capture your screen, trim the range, mask sensitive regions, and export a redacted WebM.</p>
+          <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <button id="emptyRecord" class="btn btn-sm btn-danger" type="button">
+              <i class="bi bi-record-circle"></i> Record Screen
+            </button>
+            <button id="emptyLoadVideo" class="btn btn-sm btn-primary" type="button">
+              <i class="bi bi-folder2-open"></i> Load Video
+            </button>
+          </div>
+        </div>
+
+        <div id="recordBadge" class="record-badge" hidden>
+          <i class="bi bi-record-circle-fill text-danger"></i>
+          <b id="recordBadgeClock">00:00</b>
+          <button id="stopRecord" class="btn btn-danger btn-sm py-0 px-2" type="button">Stop</button>
+        </div>
+
+        <div id="exportOverlay" class="stage-overlay" hidden>
+          <div class="spinner-border text-primary"></div>
+          <strong class="mt-2">Exporting redacted video</strong>
+          <span id="exportOverlayDetail" class="small text-muted">Preparing export...</span>
+          <div class="progress w-50 mt-2" style="height: 8px;">
+            <div id="exportOverlayBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm">
+            <button id="back" class="btn btn-outline-secondary" type="button" title="Back 10s">
+              <i class="bi bi-arrow-counterclockwise"></i> 10
+            </button>
+            <button id="play" class="btn btn-primary px-3" type="button" title="Play / Pause (Space)">
+              <i class="bi bi-play-fill"></i>
+            </button>
+            <button id="forward" class="btn btn-outline-secondary" type="button" title="Forward 10s">
+              10 <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+          <span id="now" class="time-badge">00:00:00.000</span>
+          <div id="timeline" class="timeline flex-grow-1" title="Click or drag to seek">
+            <div id="shadeBefore" class="shade" title="Excluded from Export"></div>
+            <div id="shadeAfter" class="shade" title="Excluded from Export"></div>
+            <div id="progress"></div>
+          </div>
+          <span id="total" class="time-badge">00:00:00.000</span>
+          <button id="mute" class="btn btn-sm btn-outline-secondary" type="button" title="Mute playback">
+            <i class="bi bi-volume-up"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <aside id="redactionsSidebar" class="glass-panel d-flex flex-column overflow-hidden">
+      <div class="panel-header d-flex justify-content-between align-items-center px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-eye-slash text-danger"></i>
+          <strong class="small text-uppercase tracking-wide">Timed Redactions</strong>
+        </div>
+        <span id="maskCount" class="badge rounded-pill text-bg-secondary">0</span>
+      </div>
+      <div class="flex-grow-1 overflow-auto p-2">
+        <div id="masks" class="d-flex flex-column gap-2"></div>
+        <div id="noMasks" class="text-center text-muted py-5 px-3">
+          <i class="bi bi-shield-lock fs-2 d-block mb-2 opacity-50"></i>
+          <div class="fw-semibold small">No redactions yet</div>
+          <div class="small opacity-75">Click <b>Add Redaction</b> and drag over sensitive areas on the video.</div>
+        </div>
+      </div>
+    </aside>
+
+    <section id="commands" class="glass-panel px-3 py-2">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button id="addMask" class="btn btn-sm btn-outline-danger" type="button">
+          <i class="bi bi-eye-slash"></i> Add Redaction
+        </button>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="vr d-none d-sm-block text-secondary opacity-25"></div>
+          <span class="small fw-semibold text-secondary"><i class="bi bi-scissors"></i> Trim Range</span>
+          <button id="rangeStart" class="btn btn-sm btn-outline-secondary" type="button">Start</button>
+          <span id="rangeStartText" class="time-badge">00:00:00.000</span>
+          <button id="rangeEnd" class="btn btn-sm btn-outline-secondary" type="button">End</button>
+          <span id="rangeEndText" class="time-badge">End</span>
+          <button id="rangeReset" class="btn btn-sm btn-outline-secondary" type="button" title="Reset trim range">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </div>
+
+        <button id="cancelDraw" class="btn btn-warning btn-sm ms-auto" type="button" hidden>
+          <i class="bi bi-x-circle"></i> Cancel Selection
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Redaction Modal -->
+  <div class="modal fade" id="maskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-panel border-0">
+        <form id="maskForm">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title fw-bold"><i class="bi bi-eye-slash text-danger me-1"></i>Timed Redaction</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold" for="maskStart">Start</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                  <input id="maskStart" class="form-control font-monospace" />
+                  <button id="maskNowStart" type="button" class="btn btn-outline-secondary" title="Current time">
+                    <i class="bi bi-crosshair"></i>
+                  </button>
+                </div>
+                <button id="maskProjectStart" type="button" class="btn btn-link btn-sm p-0 mt-1">Trim start</button>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold" for="maskEnd">End</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                  <input id="maskEnd" class="form-control font-monospace" />
+                  <button id="maskNowEnd" type="button" class="btn btn-outline-secondary" title="Current time">
+                    <i class="bi bi-crosshair"></i>
+                  </button>
+                </div>
+                <button id="maskProjectEnd" type="button" class="btn btn-link btn-sm p-0 mt-1">Trim end</button>
+              </div>
+            </div>
+            <div>
+              <label class="form-label small fw-semibold" for="maskStyle">Redaction Style</label>
+              <select id="maskStyle" class="form-select form-select-sm">
+                <option value="white">White box</option>
+                <option value="black">Black box</option>
+                <option value="pixelate">Pixelate</option>
+                <option value="blur">Blur</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Save redaction</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="../assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/export.js"></script>
+  <script src="assets/recorder.js"></script>
+</body>
+
+</html>
+

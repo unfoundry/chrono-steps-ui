@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Chrono Steps — Local browser screen recording and illustrated procedure guide studio by Unfoundry." />
+  <meta name="theme-color" content="#158cba" />
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icons/icon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Chrono Steps — Procedure Guide Studio</title>
+
+  <!-- Local Vendor CSS (Zero External CDNs) -->
+  <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css" />
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="assets/vendor/sweetalert2/sweetalert2.min.css" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+  <!-- =========================================================================
+       1. TOP RIBBON HEADER (Unfoundry Lumen + Glassmorphism)
+       ========================================================================= -->
+  <header id="topbar" class="ribbon-header">
+    <div class="ribbon-bar">
+      <!-- Brand & Project Meta -->
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="#" class="ribbon-brand" onclick="return false;">
+          <span class="ribbon-brand-icon"><i class="bi bi-camera-reels"></i></span>
+          <span>Chrono Steps</span>
+          <span class="badge rounded-pill text-bg-light border text-primary fw-semibold d-none d-xl-inline" style="font-size:0.7rem;">Unfoundry</span>
+        </a>
+        <div class="vr mx-1 text-secondary opacity-25 d-none d-md-block"></div>
+        <div class="d-flex align-items-center gap-2">
+          <input id="projectName" class="form-control form-control-sm top-field" value="Untitled guide" aria-label="Project name" title="Project title" />
+          <input id="authorName" class="form-control form-control-sm top-field d-none d-sm-block" placeholder="Author" aria-label="Author name" title="Author" />
+          <span id="dirtyBadge" class="dirty-indicator clean" title="Local recovery state">
+            <i class="bi bi-check2"></i> <span>Saved</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Action Toolbar -->
+      <div class="d-flex align-items-center gap-3">
+        <div class="quick-toolbar d-none d-lg-flex">
+          <button id="quickAddStep" class="quick-btn text-primary" type="button" title="Add step (Alt+Shift+A)">
+            <i class="bi bi-plus-circle"></i> Step
+          </button>
+          <button id="quickAddShot" class="quick-btn" type="button" title="Add step with screenshot (Alt+Shift+I)">
+            <i class="bi bi-card-image"></i> Shot
+          </button>
+          <button id="quickAddMask" class="quick-btn" type="button" title="Add redaction (Alt+Shift+R)">
+            <i class="bi bi-eye-slash"></i> Redact
+          </button>
+          <div class="vr my-1 text-secondary opacity-25"></div>
+          <button id="quickSave" class="quick-btn text-primary" type="button" title="Save .steps (Ctrl+S)">
+            <i class="bi bi-floppy"></i> Save
+          </button>
+        </div>
+
+        <div class="form-check form-switch m-0 d-flex align-items-center gap-1" title="Show/hide visual cues on video">
+          <input id="cueToggle" class="form-check-input m-0" type="checkbox" checked />
+          <label class="form-check-label small fw-semibold text-secondary" for="cueToggle">Cues</label>
+        </div>
+
+        <div class="form-check form-switch m-0 d-flex align-items-center gap-1" title="Show/hide video panel">
+          <input id="videoToggle" class="form-check-input m-0" type="checkbox" checked />
+          <label class="form-check-label small fw-semibold text-secondary" for="videoToggle">Video</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Ribbon (File, Edit, Export, Help) -->
+    <div class="px-3 pb-1 border-top border-light-subtle d-flex align-items-center gap-1 nav-ribbon">
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">File</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="newButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-file-earmark-plus text-primary"></i>New project</span><kbd>Alt+Shift+N</kbd>
+            </button>
+          </li>
+          <li>
+            <button id="openButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-folder2-open text-primary"></i>Open .steps / .stepslite</span><kbd>Ctrl+O</kbd>
+            </button>
+          </li>
+          <li>
+            <button id="recordMenu" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-record-circle text-danger"></i>Record screen</span>
+            </button>
+          </li>
+          <li>
+            <button id="videoButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-camera-video text-secondary"></i>Load video file</span>
+            </button>
+          </li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li>
+            <button id="saveButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-floppy text-success"></i>Save (.steps)</span><kbd>Ctrl+S</kbd>
+            </button>
+          </li>
+          <li>
+            <button id="saveLiteButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-file-earmark-zip text-info"></i>Save Lite (.stepslite)</span><kbd>Alt+S</kbd>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Edit</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="menuAdd" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-plus-circle text-primary"></i>Add step</span><kbd>Alt+Shift+A</kbd>
+            </button>
+          </li>
+          <li>
+            <button id="menuShot" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-card-image text-primary"></i>Add step with screenshot</span><kbd>Alt+Shift+I</kbd>
+            </button>
+          </li>
+          <li>
+            <button id="menuRedact" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-eye-slash text-danger"></i>Add redaction</span><kbd>Alt+Shift+R</kbd>
+            </button>
+          </li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li>
+            <button id="menuCues" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-bounding-box text-warning"></i>Show visual cues</span>
+              <i class="bi bi-check-lg toggle-check text-primary"></i>
+            </button>
+          </li>
+          <li>
+            <button id="menuMute" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-volume-up text-secondary"></i>Mute playback</span>
+              <i class="bi toggle-check text-primary"></i>
+            </button>
+          </li>
+          <li>
+            <button id="menuAudio" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-volume-mute text-secondary"></i>Exclude audio on export</span>
+              <i class="bi toggle-check text-primary"></i>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Export</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="exportOriginal" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-camera-reels text-secondary"></i>Original video</span>
+            </button>
+          </li>
+          <li>
+            <button id="exportRendered" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-shield-check text-success"></i>Rendered redacted video (WebM)</span>
+            </button>
+          </li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li>
+            <button id="exportHtml" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-filetype-html text-primary"></i>Steps HTML guide</span>
+            </button>
+          </li>
+          <li>
+            <button id="printPdf" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-filetype-pdf text-danger"></i>PDF Print</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Help</a>
+        <ul class="dropdown-menu dropdown-menu-glass">
+          <li>
+            <button id="tipsButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-lightbulb text-warning"></i>Tips & Workflow</span>
+            </button>
+          </li>
+          <li>
+            <button id="shortcutsButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-keyboard text-primary"></i>Keyboard shortcuts</span>
+            </button>
+          </li>
+          <li>
+            <a class="dropdown-item-glass" href="view/index.html" target="_blank" rel="noopener noreferrer">
+              <span><i class="bi bi-box-arrow-up-right text-secondary"></i>Read-only Viewer</span>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li>
+            <button id="aboutButton" class="dropdown-item-glass w-100 border-0 bg-transparent" type="button">
+              <span><i class="bi bi-info-circle text-info"></i>About Chrono Steps</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <span id="drawModeBanner" class="badge text-bg-warning ms-auto d-none align-items-center gap-2 py-1 px-2">
+        <i class="bi bi-bounding-box-circles"></i>
+        <span id="drawModeText">Drag on the video to select an area</span>
+      </span>
+    </div>
+
+    <input id="projectInput" type="file" accept=".steps,.stepslite,application/json" hidden />
+    <input id="videoInput" type="file" accept="video/*" hidden />
+  </header>
+
+  <!-- =========================================================================
+       2. MAIN WORKSPACE
+       ========================================================================= -->
+  <main id="workspace" class="workspace container-fluid p-2 p-md-3">
+    <!-- Video Stage Panel -->
+    <section id="videoPanel" class="glass-panel d-flex flex-column overflow-hidden" tabindex="0">
+      <div class="panel-header d-flex justify-content-between align-items-center px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-film text-primary"></i>
+          <strong class="small text-uppercase tracking-wide">Recording Studio</strong>
+        </div>
+        <div class="btn-group btn-group-sm">
+          <button id="loadVideo" class="btn btn-outline-primary" type="button">
+            <i class="bi bi-folder2-open"></i> Load video
+          </button>
+          <button id="recordScreen" class="btn btn-outline-danger" type="button">
+            <i class="bi bi-record-circle"></i>
+            <span id="recordText">Record screen</span>
+            <span id="recordClock" class="ms-1 fw-bold" hidden>00:00</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="stage" class="stage empty flex-grow-1">
+        <video id="video" playsinline></video>
+        <canvas id="overlay"></canvas>
+
+        <div id="empty" class="empty-state text-center p-4">
+          <div class="empty-icon-circle mb-3 mx-auto">
+            <i class="bi bi-camera-video fs-1 text-primary"></i>
+          </div>
+          <h5 class="fw-bold mb-1">No Video Loaded</h5>
+          <p class="text-muted small mb-3">Record your screen, load a video file, or open a <code>.steps</code> / <code>.stepslite</code> project.</p>
+          <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <button id="emptyRecord" class="btn btn-sm btn-danger" type="button">
+              <i class="bi bi-record-circle"></i> Record Screen
+            </button>
+            <button id="emptyLoadVideo" class="btn btn-sm btn-primary" type="button">
+              <i class="bi bi-folder2-open"></i> Load Video
+            </button>
+            <button id="emptyOpenProject" class="btn btn-sm btn-outline-secondary" type="button">
+              <i class="bi bi-file-earmark-code"></i> Open Project
+            </button>
+          </div>
+        </div>
+
+        <div id="loadingOverlay" class="stage-overlay" hidden>
+          <div class="spinner-border text-primary"></div>
+          <strong id="loadingTitle" class="mt-2">Loading video</strong>
+          <span id="loadingDetail" class="small text-muted">Preparing media...</span>
+          <div class="progress w-50 mt-2" style="height: 8px;">
+            <div id="loadingBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 35%"></div>
+          </div>
+        </div>
+
+        <div id="recordBadge" class="record-badge" hidden>
+          <i class="bi bi-record-circle-fill text-danger"></i>
+          <b id="recordBadgeClock">00:00</b>
+          <button id="stopRecord" class="btn btn-danger btn-sm py-0 px-2" type="button">Stop</button>
+        </div>
+
+        <div id="exportOverlay" class="stage-overlay" hidden>
+          <div class="spinner-border text-primary"></div>
+          <strong class="mt-2">Exporting redacted video</strong>
+          <span id="exportOverlayDetail" class="small text-muted">Preparing export...</span>
+          <div class="progress w-50 mt-2" style="height: 8px;">
+            <div id="exportOverlayBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+          </div>
+          <small class="text-muted mt-1">Playback controls are temporarily disabled.</small>
+        </div>
+      </div>
+
+      <div class="panel-footer px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm">
+            <button id="back" class="btn btn-outline-secondary" type="button" title="Back 10s">
+              <i class="bi bi-arrow-counterclockwise"></i> 10
+            </button>
+            <button id="play" class="btn btn-primary px-3" type="button" title="Play / Pause (Space)">
+              <i class="bi bi-play-fill"></i>
+            </button>
+            <button id="forward" class="btn btn-outline-secondary" type="button" title="Forward 10s">
+              10 <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+
+          <span id="now" class="time-badge">00:00:00.000</span>
+
+          <div id="timeline" class="timeline flex-grow-1" title="Click or drag to seek">
+            <div id="shadeBefore" class="shade" title="Excluded from Export"></div>
+            <div id="shadeAfter" class="shade" title="Excluded from Export"></div>
+            <div id="progress"></div>
+            <div id="pins"></div>
+          </div>
+
+          <span id="total" class="time-badge">00:00:00.000</span>
+
+          <button id="mute" class="btn btn-sm btn-outline-secondary" type="button" title="Mute playback">
+            <i class="bi bi-volume-up"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guide Structure & Redactions Sidebar -->
+    <aside id="stepsPanel" class="glass-panel d-flex flex-column overflow-hidden">
+      <div class="panel-header d-flex justify-content-between align-items-center px-3 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-list-ol text-primary"></i>
+          <strong class="small text-uppercase tracking-wide">Guide Structure</strong>
+        </div>
+        <span id="stepCount" class="badge rounded-pill text-bg-primary">0</span>
+      </div>
+
+      <div id="stepScroll" class="flex-grow-1 overflow-auto p-2">
+        <div id="steps" class="d-flex flex-column gap-2"></div>
+        <div id="noSteps" class="text-center text-muted py-5 px-3">
+          <i class="bi bi-journal-plus fs-2 d-block mb-2 opacity-50"></i>
+          <div class="fw-semibold small">No steps yet</div>
+          <div class="small opacity-75">Pause the video and click <b>Add step</b> or <b>Step with screenshot</b>.</div>
+        </div>
+      </div>
+
+      <div id="redactionPanel" class="panel-footer p-2 border-top">
+        <div class="d-flex justify-content-between align-items-center px-1 mb-1">
+          <strong class="small text-uppercase text-secondary"><i class="bi bi-eye-slash me-1"></i>Redactions</strong>
+          <span id="maskCount" class="badge rounded-pill text-bg-secondary">0</span>
+        </div>
+        <div id="masks" class="masks-list d-flex flex-column gap-1"></div>
+      </div>
+    </aside>
+
+    <!-- Bottom Command Bar -->
+    <section id="commands" class="glass-panel px-3 py-2">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <div class="btn-group btn-group-sm">
+          <button id="addStep" class="btn btn-primary" type="button">
+            <i class="bi bi-plus-circle"></i> Add step
+          </button>
+          <button id="addShot" class="btn btn-outline-primary" type="button">
+            <i class="bi bi-card-image"></i> Step with screenshot
+          </button>
+          <button id="addMask" class="btn btn-outline-danger" type="button">
+            <i class="bi bi-eye-slash"></i> Redaction
+          </button>
+        </div>
+
+        <div id="rangeControls" class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="vr d-none d-sm-block text-secondary opacity-25"></div>
+          <span class="small fw-semibold text-secondary"><i class="bi bi-scissors"></i> Range</span>
+          <button id="rangeStart" class="btn btn-sm btn-outline-secondary" type="button">Start</button>
+          <span id="rangeStartText" class="time-badge">00:00:00.000</span>
+          <button id="rangeEnd" class="btn btn-sm btn-outline-secondary" type="button">End</button>
+          <span id="rangeEndText" class="time-badge">End</span>
+          <button id="rangeReset" class="btn btn-sm btn-outline-secondary" type="button" title="Reset trim range">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </div>
+
+        <button id="cancelDraw" class="btn btn-warning btn-sm ms-auto" type="button" hidden>
+          <i class="bi bi-x-circle"></i> Cancel Selection
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       3. MODALS (Bootstrap 5 + Glassmorphism; Confirmations use SweetAlert2)
+       ========================================================================= -->
+  <!-- Step Editor Modal -->
+  <div class="modal fade" id="stepModal" tabindex="-1" aria-labelledby="stepHeading" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content glass-panel border-0">
+        <form id="stepForm">
+          <div class="modal-header border-bottom">
+            <h5 id="stepHeading" class="modal-title fw-bold">Add step</h5>
+            <button id="stepClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2 mb-2">
+              <div class="col-sm-5">
+                <label class="form-label small fw-semibold" for="stepTime">Timestamp</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                  <input id="stepTime" class="form-control font-monospace" />
+                  <button id="stepNow" class="btn btn-outline-secondary" type="button" title="Use current playhead time">
+                    <i class="bi bi-crosshair"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-sm-7">
+                <label class="form-label small fw-semibold" for="stepTitle">Title</label>
+                <input id="stepTitle" class="form-control form-control-sm" required placeholder="e.g., Click Sign In" />
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label small fw-semibold" for="stepDetails">Details</label>
+              <textarea id="stepDetails" class="form-control form-control-sm" rows="3" placeholder="Optional instructions or notes for this step..."></textarea>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold" for="stepType">Type</label>
+                <select id="stepType" class="form-select form-select-sm">
+                  <option value="step">Step</option>
+                  <option value="substep">Substep</option>
+                  <option value="note">Note</option>
+                </select>
+              </div>
+              <div id="parentWrap" class="col-sm-6" hidden>
+                <label class="form-label small fw-semibold" for="parent">Parent step</label>
+                <select id="parent" class="form-select form-select-sm"></select>
+              </div>
+            </div>
+
+            <div class="screenshot-panel border rounded p-2 bg-white bg-opacity-50">
+              <div class="image-toolbar d-flex flex-wrap gap-2 mb-2">
+                <button id="selectImage" type="button" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-crop"></i> Select from video
+                </button>
+                <button id="browseImage" type="button" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-image"></i> Browse
+                </button>
+                <button id="annotatePending" type="button" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-pencil"></i> Annotate
+                </button>
+                <button id="removeImage" type="button" class="btn btn-sm btn-outline-danger ms-auto">
+                  <i class="bi bi-trash"></i> Remove
+                </button>
+              </div>
+              <input id="imageInput" type="file" accept="image/*" hidden />
+              <div id="imageDropZone" class="image-drop-zone" tabindex="0" role="button" aria-label="Paste or drop a screenshot">
+                <div id="imageDropPrompt" class="image-drop-prompt">
+                  <i class="bi bi-clipboard-plus fs-4 text-primary"></i>
+                  <strong class="small">Paste or drop a screenshot</strong>
+                  <span class="small text-muted">Click here and press <kbd>Ctrl+V</kbd>, or drag an image file here.</span>
+                </div>
+                <img id="preview" class="img-fluid rounded" alt="Step screenshot preview" hidden />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button id="stepCancel" type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i> Save step</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Redaction Modal -->
+  <div class="modal fade" id="maskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-panel border-0">
+        <form id="maskForm">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title fw-bold"><i class="bi bi-eye-slash text-danger me-1"></i>Timed Redaction</h5>
+            <button id="maskClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold" for="maskStart">Start</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                  <input id="maskStart" class="form-control font-monospace" />
+                  <button id="maskNowStart" type="button" class="btn btn-outline-secondary" title="Current time">
+                    <i class="bi bi-crosshair"></i>
+                  </button>
+                </div>
+                <button id="maskProjectStart" type="button" class="btn btn-link btn-sm p-0 mt-1">Project start</button>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold" for="maskEnd">End</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                  <input id="maskEnd" class="form-control font-monospace" />
+                  <button id="maskNowEnd" type="button" class="btn btn-outline-secondary" title="Current time">
+                    <i class="bi bi-crosshair"></i>
+                  </button>
+                </div>
+                <button id="maskProjectEnd" type="button" class="btn btn-link btn-sm p-0 mt-1">Project end</button>
+              </div>
+            </div>
+            <div>
+              <label class="form-label small fw-semibold" for="maskStyle">Redaction Style</label>
+              <select id="maskStyle" class="form-select form-select-sm">
+                <option value="white">White box</option>
+                <option value="black">Black box</option>
+                <option value="pixelate">Pixelate</option>
+                <option value="blur">Blur</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <button id="maskCancel" type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Save redaction</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshot Annotation Modal -->
+  <div class="modal fade" id="annotationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content glass-panel border-0">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-danger me-1"></i>Annotate Screenshot</h5>
+          <button id="annotationClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Annotation tools">
+              <button class="btn btn-outline-danger active" type="button" data-tool="rectangle">
+                <i class="bi bi-square"></i> Red box
+              </button>
+              <button class="btn btn-outline-danger" type="button" data-tool="circle">
+                <i class="bi bi-circle"></i> Red circle
+              </button>
+            </div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Mask tools">
+              <button class="btn btn-outline-dark" type="button" data-tool="black">
+                <i class="bi bi-square-fill"></i> Black mask
+              </button>
+              <button class="btn btn-outline-secondary" type="button" data-tool="white">
+                <i class="bi bi-square"></i> White mask
+              </button>
+              <button class="btn btn-outline-primary" type="button" data-tool="blur">
+                <i class="bi bi-droplet-half"></i> Blur
+              </button>
+              <button class="btn btn-outline-primary" type="button" data-tool="pixelate">
+                <i class="bi bi-grid-3x3"></i> Pixelate
+              </button>
+            </div>
+            <button id="annotationUndo" class="btn btn-sm btn-outline-secondary ms-auto" type="button">
+              <i class="bi bi-arrow-counterclockwise"></i> Undo
+            </button>
+          </div>
+          <div class="annotation-stage">
+            <canvas id="annotationCanvas"></canvas>
+          </div>
+        </div>
+        <div class="modal-footer border-top">
+          <button id="annotationCancel" type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="annotationSave" type="button" class="btn btn-sm btn-primary">Apply annotations</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Screenshot Zoom Modal -->
+  <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content glass-panel border-0">
+        <div class="modal-header border-bottom">
+          <h5 id="imagePreviewTitle" class="modal-title fw-bold">Screenshot</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Zoom controls">
+              <button id="zoomOutBtn" type="button" class="btn btn-outline-secondary" title="Zoom out">
+                <i class="bi bi-zoom-out"></i> Zoom Out
+              </button>
+              <button id="zoomResetBtn" type="button" class="btn btn-outline-secondary" title="Reset zoom">
+                100%
+              </button>
+              <button id="zoomInBtn" type="button" class="btn btn-outline-secondary" title="Zoom in">
+                <i class="bi bi-zoom-in"></i> Zoom In
+              </button>
+            </div>
+            <span id="zoomLevelLabel" class="small text-muted font-monospace">100%</span>
+          </div>
+          <div class="image-zoom-viewport">
+            <img id="imagePreviewImg" alt="Expanded step screenshot" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Vendor JS (Zero External CDNs) -->
+  <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/export.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+
+</html>
+
